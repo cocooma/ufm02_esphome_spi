@@ -7,8 +7,6 @@ from esphome.components import spi, sensor
 from esphome.const import (
     CONF_ID,
     CONF_UPDATE_INTERVAL,
-    DEVICE_CLASS,
-    STATE_CLASS,
     UNIT_EMPTY,
 )
 
