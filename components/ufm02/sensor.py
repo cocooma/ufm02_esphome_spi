@@ -32,7 +32,7 @@ CONFIG_SCHEMA = (
     .extend(
         {
             cv.Required(CONF_INT_PIN):
-                pins.internal_gpio_input_pin_number,
+                pins.internal_gpio_input_pin_schema,
             cv.Required(CONF_REGISTER_ADDRESS):
                 cv.hex_uint8_t,
             cv.Optional(
@@ -52,10 +52,7 @@ async def to_code(config):
     await sensor.register_sensor(var, config)
 
     int_pin = await cg.gpio_pin_expression(
-        {
-            "number": config[CONF_INT_PIN],
-            "mode": "INPUT",
-        }
+        config[CONF_INT_PIN]
     )
     cg.add(var.set_int_pin(int_pin))
 
