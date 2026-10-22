@@ -3,12 +3,8 @@ import esphome.codegen as cg
 import esphome.config_validation as cv
 
 from esphome import pins
-from esphome.components import spi, sensor
-from esphome.const import (
-    CONF_ID,
-    CONF_UPDATE_INTERVAL,
-    UNIT_EMPTY,
-)
+from esphome.components import sensor, spi
+from esphome.const import CONF_ID, CONF_UPDATE_INTERVAL, UNIT_EMPTY
 
 DEPENDENCIES = ["spi"]
 
@@ -31,34 +27,38 @@ CONFIG_SCHEMA = (
         accuracy_decimals=0,
     )
     .extend(
-        spi.spi_device_schema(
-            cs_pin_required=True,
-        )
+        spi.spi_device_schema(cs_pin_required=True)
     )
     .extend(
         {
             cv.Required(CONF_INT_PIN):
-                pins.gpio_input_pin_schema(),
+                pins.internal_gpio_input_pin_number,
             cv.Required(CONF_REGISTER_ADDRESS):
                 cv.hex_uint8_t,
-            cv.Optional(CONF_UPDATE_INTERVAL, default="1s"):
-                cv.update_interval,
+            cv.Optional(
+                CONF_UPDATE_INTERVAL, default="1s"
+            ): cv.update_interval,
         }
     )
     .extend(cv.COMPONENT_SCHEMA)
 )
 
+
 async def to_code(config):
-    var = await cg.new_Pvariable(config[CONF_ID])
+    var = cg.new_Pvariable(config[CONF_ID])
+
     await cg.register_component(var, config)
     await spi.register_spi_device(var, config)
-
     await sensor.register_sensor(var, config)
 
     int_pin = await cg.gpio_pin_expression(
-        config[CONF_INT_PIN]
+        {
+            "number": config[CONF_INT_PIN],
+            "mode": "INPUT",
+        }
     )
     cg.add(var.set_int_pin(int_pin))
+
     cg.add(
         var.set_register_address(
             config[CONF_REGISTER_ADDRESS]
