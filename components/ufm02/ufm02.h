@@ -1,33 +1,44 @@
+
 #pragma once
 
 #include "esphome/core/component.h"
+#include "esphome/core/gpio.h"
 #include "esphome/components/sensor/sensor.h"
-
-#include <cstdint>
+#include "esphome/components/spi/spi.h"
 
 namespace esphome {
 namespace ufm02 {
 
-class UFM02Sensor : public PollingComponent {
+class UFM02Component
+    : public PollingComponent,
+      public spi::SPIDevice<
+          spi::BIT_ORDER_MSB_FIRST,
+          spi::CLOCK_POLARITY_LOW,
+          spi::CLOCK_PHASE_TRAILING,
+          spi::DATA_RATE_1MHZ> {
  public:
-  explicit UFM02Sensor() : PollingComponent(100) {}
+  UFM02Component() : PollingComponent(100) {}
 
-  void set_cs_pin(int pin) { cs_pin_ = pin; }
-  void set_sck_pin(int pin) { sck_pin_ = pin; }
-  void set_mosi_pin(int pin) { mosi_pin_ = pin; }
-  void set_miso_pin(int pin) { miso_pin_ = pin; }
-  void set_int_pin(int pin) { int_pin_ = pin; }
+  void set_int_pin(InternalGPIOPin *pin) {
+    int_pin_ = pin;
+  }
 
-  void set_flow_sensor(sensor::Sensor *sensor) { flow_sensor_ = sensor; }
+  void set_flow_sensor(sensor::Sensor *sensor) {
+    flow_sensor_ = sensor;
+  }
+
   void set_filtered_flow_sensor(sensor::Sensor *sensor) {
     filtered_flow_sensor_ = sensor;
   }
+
   void set_total_volume_sensor(sensor::Sensor *sensor) {
     total_volume_sensor_ = sensor;
   }
+
   void set_temperature_sensor(sensor::Sensor *sensor) {
     temperature_sensor_ = sensor;
   }
+
   void set_error_flags_sensor(sensor::Sensor *sensor) {
     error_flags_sensor_ = sensor;
   }
@@ -37,11 +48,7 @@ class UFM02Sensor : public PollingComponent {
   void dump_config() override;
 
  protected:
-  int cs_pin_{5};
-  int sck_pin_{18};
-  int mosi_pin_{23};
-  int miso_pin_{19};
-  int int_pin_{2};
+  InternalGPIOPin *int_pin_{nullptr};
 
   sensor::Sensor *flow_sensor_{nullptr};
   sensor::Sensor *filtered_flow_sensor_{nullptr};
