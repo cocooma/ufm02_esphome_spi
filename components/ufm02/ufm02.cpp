@@ -1,72 +1,65 @@
-
 #include "ufm02.h"
+
 #include "esphome/core/log.h"
+
+#include <Arduino.h>
+#include <SPI.h>
+#include <inttypes.h>
 
 namespace esphome {
 namespace ufm02 {
 
 static const char *const TAG = "ufm02";
 
-// UFM-02 SPI RAM/register read command.
-// Verify the complete protocol against the vendor driver.
-static constexpr uint8_t CMD_RD_RAM = 0x7A;
-
 void UFM02Sensor::setup() {
-  if (this->int_pin_ == nullptr) {
-    ESP_LOGE(TAG, "INT pin is not configured");
-    this->mark_failed();
-    return;
-  }
+  ESP_LOGCONFIG(TAG, "Initializing UFM-02");
 
-  this->int_pin_->setup();
-  this->int_pin_->pin_mode(gpio::FLAG_INPUT);
+  pinMode(cs_pin_, OUTPUT);
+  digitalWrite(cs_pin_, HIGH);
 
-  ESP_LOGI(TAG, "UFM-02 SPI component initialized");
-  ESP_LOGI(TAG, "Register address: 0x%02X",
-           this->register_address_);
+  pinMode(int_pin_, INPUT_PULLUP);
+
+  SPI.begin(sck_pin_, miso_pin_, mosi_pin_, cs_pin_);
+
+  ESP_LOGCONFIG(TAG, "SPI initialized");
+  ESP_LOGCONFIG(TAG, "CS GPIO: %d", cs_pin_);
+  ESP_LOGCONFIG(TAG, "SCK GPIO: %d", sck_pin_);
+  ESP_LOGCONFIG(TAG, "MOSI GPIO: %d", mosi_pin_);
+  ESP_LOGCONFIG(TAG, "MISO GPIO: %d", miso_pin_);
+  ESP_LOGCONFIG(TAG, "INT GPIO: %d", int_pin_);
 }
 
 void UFM02Sensor::update() {
-  // INTN is an active-low interrupt signal.
-  // Avoid reading the device when no interrupt is pending.
-  if (this->int_pin_->digital_read()) {
-    ESP_LOGV(TAG, "No active INTN signal");
-    return;
-  }
+  const bool interrupt_active = digitalRead(int_pin_) == LOW;
 
-  uint8_t data[4] = {0, 0, 0, 0};
+  ESP_LOGD(TAG, "Interrupt active: %s",
+           interrupt_active ? "yes" : "no");
 
-  this->enable();
-
-  this->write_byte(CMD_RD_RAM);
-  this->write_byte(this->register_address_);
-  this->read_array(data, sizeof(data));
-
-  this->disable();
-
-  // Assemble the four returned bytes as a big-endian
-  // unsigned 32-bit value. Confirm byte order against
-  // the register definition before using this as a
-  // physical measurement.
-  uint32_t raw =
-      (static_cast<uint32_t>(data[0]) << 24) |
-      (static_cast<uint32_t>(data[1]) << 16) |
-      (static_cast<uint32_t>(data[2]) << 8) |
-      static_cast<uint32_t>(data[3]);
-
-  ESP_LOGD(TAG, "Raw register: 0x%08X (%u)",
-           raw, static_cast<unsigned int>(raw));
-
-  this->publish_state(static_cast<float>(raw));
+  // TODO:
+  // Read the UFM-02 measurement registers using the exact API/protocol
+  // supported by the installed ScioSense_UFM02 library.
+  //
+  // Publish values only after obtaining valid measurements:
+  //   flow_sensor_->publish_state(flow);
+  //   filtered_flow_sensor_->publish_state(filtered_flow);
+  //   total_volume_sensor_->publish_state(total_volume);
+  //   temperature_sensor_->publish_state(temperature);
+  //   error_flags_sensor_->publish_state(error_flags);
 }
 
 void UFM02Sensor::dump_config() {
-  ESP_LOGCONFIG(TAG, "ScioSense UFM-02:");
-  LOG_PIN("  INT Pin: ", this->int_pin_);
-  ESP_LOGCONFIG(TAG, "  Register: 0x%02X",
-                this->register_address_);
-  LOG_SENSOR("  ", "Raw Register", this);
-  LOG_PIN("  CS Pin: ", this->cs_pin_);
+  ESP_LOGCONFIG(TAG, "UFM-02:");
+  ESP_LOGCONFIG(TAG, "  CS GPIO: %d", cs_pin_);
+  ESP_LOGCONFIG(TAG, "  SCK GPIO: %d", sck_pin_);
+  ESP_LOGCONFIG(TAG, "  MOSI GPIO: %d", mosi_pin_);
+  ESP_LOGCONFIG(TAG, "  MISO GPIO: %d", miso_pin_);
+  ESP_LOGCONFIG(TAG, "  INT GPIO: %d", int_pin_);
+
+  LOG_SENSOR("  Flow: ", flow_sensor_);
+  LOG_SENSOR("  Filtered flow: ", filtered_flow_sensor_);
+  LOG_SENSOR("  Total volume: ", total_volume_sensor_);
+  LOG_SENSOR("  Temperature: ", temperature_sensor_);
+  LOG_SENSOR("  Error flags: ", error_flags_sensor_);
 }
 
 }  // namespace ufm02
