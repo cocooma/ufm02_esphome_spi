@@ -65,11 +65,11 @@ void UFM02Component::dump_config() {
 
   LOG_PIN("  INT pin: ", int_pin_);
 
-  LOG_SENSOR("  Flow: ", flow_sensor_);
-  LOG_SENSOR("  Filtered flow: ", filtered_flow_sensor_);
-  LOG_SENSOR("  Total volume: ", total_volume_sensor_);
-  LOG_SENSOR("  Temperature: ", temperature_sensor_);
-  LOG_SENSOR("  Error flags: ", error_flags_sensor_);
+  LOG_SENSOR("  Flow: ", "Flow", flow_sensor_);
+  LOG_SENSOR("  Filtered flow: ", "Filtered Flow", filtered_flow_sensor_);
+  LOG_SENSOR("  Total volume: ", "Total Volume", total_volume_sensor_);
+  LOG_SENSOR("  Temperature: ", "Temperature", temperature_sensor_);
+  LOG_SENSOR("  Error flags: ", "Error Flags", error_flags_sensor_);
 }
 
 }  // namespace ufm02
