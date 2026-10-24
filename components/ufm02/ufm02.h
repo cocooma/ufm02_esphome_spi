@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "esphome/core/component.h"
@@ -17,11 +16,9 @@ class UFM02Component
           spi::CLOCK_PHASE_TRAILING,
           spi::DATA_RATE_1MHZ> {
  public:
-  UFM02Component() : PollingComponent(100) {}
+  UFM02Component() : PollingComponent(1000) {}
 
-  void set_int_pin(InternalGPIOPin *pin) {
-    int_pin_ = pin;
-  }
+  void set_int_pin(InternalGPIOPin *pin) { int_pin_ = pin; }
 
   void set_flow_sensor(sensor::Sensor *sensor) {
     flow_sensor_ = sensor;
@@ -55,6 +52,7 @@ class UFM02Component
   sensor::Sensor *total_volume_sensor_{nullptr};
   sensor::Sensor *temperature_sensor_{nullptr};
   sensor::Sensor *error_flags_sensor_{nullptr};
+
   bool read_register_(uint8_t address, uint32_t *value);
   bool write_register_(uint8_t address, uint32_t value);
   bool write_opcode_(uint8_t opcode);

@@ -1,4 +1,3 @@
-
 import esphome.codegen as cg
 import esphome.config_validation as cv
 
@@ -9,6 +8,7 @@ from esphome.const import (
     CONF_TEMPERATURE,
     DEVICE_CLASS_TEMPERATURE,
     STATE_CLASS_MEASUREMENT,
+    STATE_CLASS_TOTAL_INCREASING,
     UNIT_CELSIUS,
 )
 
@@ -21,59 +21,68 @@ CONF_TOTAL_VOLUME = "total_volume"
 CONF_ERROR_FLAGS = "error_flags"
 
 ufm02_ns = cg.esphome_ns.namespace("ufm02")
+
 UFM02Component = ufm02_ns.class_(
     "UFM02Component",
     cg.PollingComponent,
     spi.SPIDevice,
 )
 
-CONFIG_SCHEMA = cv.Schema(
-    {
-        cv.GenerateID(): cv.declare_id(UFM02Component),
-        cv.Required(CONF_INT_PIN): pins.gpio_input_pin_schema,
-        cv.Optional(CONF_FLOW): sensor.sensor_schema(
-            unit_of_measurement="L/min",
-            icon="mdi:water-pump",
-            accuracy_decimals=3,
-            state_class=STATE_CLASS_MEASUREMENT,
-        ),
-        cv.Optional(CONF_FILTERED_FLOW): sensor.sensor_schema(
-            unit_of_measurement="L/min",
-            icon="mdi:water",
-            accuracy_decimals=3,
-            state_class=STATE_CLASS_MEASUREMENT,
-        ),
-        cv.Optional(CONF_TOTAL_VOLUME): sensor.sensor_schema(
-            unit_of_measurement="L",
-            icon="mdi:counter",
-            accuracy_decimals=3,
-            state_class="total_increasing",
-        ),
-        cv.Optional(CONF_TEMPERATURE): sensor.sensor_schema(
-            unit_of_measurement=UNIT_CELSIUS,
-            device_class=DEVICE_CLASS_TEMPERATURE,
-            icon="mdi:thermometer",
-            accuracy_decimals=2,
-            state_class=STATE_CLASS_MEASUREMENT,
-        ),
-        cv.Optional(CONF_ERROR_FLAGS): sensor.sensor_schema(
-            icon="mdi:alert-circle",
-            accuracy_decimals=0,
-        ),
-    }
-).extend(
-    cv.polling_component_schema("100ms")
-).extend(
-    spi.spi_device_schema(
-        cs_pin_required=True,
-        default_mode="mode1",
-        default_data_rate="1MHz",
+CONFIG_SCHEMA = (
+    cv.Schema(
+        {
+            cv.GenerateID(): cv.declare_id(UFM02Component),
+            cv.Required(CONF_INT_PIN): pins.gpio_input_pin_schema,
+
+            cv.Optional(CONF_FLOW): sensor.sensor_schema(
+                unit_of_measurement="L/min",
+                icon="mdi:water-pump",
+                accuracy_decimals=3,
+                state_class=STATE_CLASS_MEASUREMENT,
+            ),
+
+            cv.Optional(CONF_FILTERED_FLOW): sensor.sensor_schema(
+                unit_of_measurement="L/min",
+                icon="mdi:water",
+                accuracy_decimals=3,
+                state_class=STATE_CLASS_MEASUREMENT,
+            ),
+
+            cv.Optional(CONF_TOTAL_VOLUME): sensor.sensor_schema(
+                unit_of_measurement="L",
+                icon="mdi:counter",
+                accuracy_decimals=3,
+                state_class=STATE_CLASS_TOTAL_INCREASING,
+            ),
+
+            cv.Optional(CONF_TEMPERATURE): sensor.sensor_schema(
+                unit_of_measurement=UNIT_CELSIUS,
+                device_class=DEVICE_CLASS_TEMPERATURE,
+                icon="mdi:thermometer",
+                accuracy_decimals=2,
+                state_class=STATE_CLASS_MEASUREMENT,
+            ),
+
+            cv.Optional(CONF_ERROR_FLAGS): sensor.sensor_schema(
+                icon="mdi:alert-circle",
+                accuracy_decimals=0,
+            ),
+        }
+    )
+    .extend(cv.polling_component_schema("1s"))
+    .extend(
+        spi.spi_device_schema(
+            cs_pin_required=True,
+            default_mode="mode1",
+            default_data_rate="1MHz",
+        )
     )
 )
 
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
+
     await cg.register_component(var, config)
     await spi.register_spi_device(var, config)
 
