@@ -1,103 +1,80 @@
+
 import esphome.codegen as cg
 import esphome.config_validation as cv
 
-from esphome import pins
-from esphome.components import sensor, spi
+from esphome.components import sensor
 from esphome.const import (
     CONF_ID,
-    CONF_TEMPERATURE,
     DEVICE_CLASS_TEMPERATURE,
     STATE_CLASS_MEASUREMENT,
     STATE_CLASS_TOTAL_INCREASING,
     UNIT_CELSIUS,
 )
 
-DEPENDENCIES = ["spi"]
+from . import UFM02Component
 
+CONF_CS_PIN = "cs_pin"
 CONF_INT_PIN = "int_pin"
+CONF_CLK_PIN = "clk_pin"
+CONF_MISO_PIN = "miso_pin"
+CONF_MOSI_PIN = "mosi_pin"
+
 CONF_FLOW = "flow"
-CONF_FILTERED_FLOW = "filtered_flow"
 CONF_TOTAL_VOLUME = "total_volume"
-CONF_ERROR_FLAGS = "error_flags"
+CONF_TEMPERATURE = "temperature"
 
-ufm02_ns = cg.esphome_ns.namespace("ufm02")
+CONFIG_SCHEMA = cv.Schema(
+    {
+        cv.GenerateID(): cv.declare_id(UFM02Component),
 
-UFM02Component = ufm02_ns.class_(
-    "UFM02Component",
-    cg.PollingComponent,
-    spi.SPIDevice,
-)
+        cv.Required(CONF_CS_PIN): cv.int_range(min=0, max=48),
+        cv.Required(CONF_INT_PIN): cv.int_range(min=0, max=48),
+        cv.Required(CONF_CLK_PIN): cv.int_range(min=0, max=48),
+        cv.Required(CONF_MISO_PIN): cv.int_range(min=0, max=48),
+        cv.Required(CONF_MOSI_PIN): cv.int_range(min=0, max=48),
 
-CONFIG_SCHEMA = (
-    cv.Schema(
-        {
-            cv.GenerateID(): cv.declare_id(UFM02Component),
-            cv.Required(CONF_INT_PIN): pins.gpio_input_pin_schema,
+        cv.Required(CONF_FLOW): sensor.sensor_schema(
+            unit_of_measurement="L/h",
+            accuracy_decimals=1,
+            icon="mdi:water-pump",
+            state_class=STATE_CLASS_MEASUREMENT,
+        ),
 
-            cv.Optional(CONF_FLOW): sensor.sensor_schema(
-                unit_of_measurement="L/min",
-                icon="mdi:water-pump",
-                accuracy_decimals=3,
-                state_class=STATE_CLASS_MEASUREMENT,
-            ),
+        cv.Required(CONF_TOTAL_VOLUME): sensor.sensor_schema(
+            unit_of_measurement="m³",
+            accuracy_decimals=6,
+            icon="mdi:water",
+            state_class=STATE_CLASS_TOTAL_INCREASING,
+        ),
 
-            cv.Optional(CONF_FILTERED_FLOW): sensor.sensor_schema(
-                unit_of_measurement="L/min",
-                icon="mdi:water",
-                accuracy_decimals=3,
-                state_class=STATE_CLASS_MEASUREMENT,
-            ),
-
-            cv.Optional(CONF_TOTAL_VOLUME): sensor.sensor_schema(
-                unit_of_measurement="L",
-                icon="mdi:counter",
-                accuracy_decimals=3,
-                state_class=STATE_CLASS_TOTAL_INCREASING,
-            ),
-
-            cv.Optional(CONF_TEMPERATURE): sensor.sensor_schema(
-                unit_of_measurement=UNIT_CELSIUS,
-                device_class=DEVICE_CLASS_TEMPERATURE,
-                icon="mdi:thermometer",
-                accuracy_decimals=2,
-                state_class=STATE_CLASS_MEASUREMENT,
-            ),
-
-            cv.Optional(CONF_ERROR_FLAGS): sensor.sensor_schema(
-                icon="mdi:alert-circle",
-                accuracy_decimals=0,
-            ),
-        }
-    )
-    .extend(cv.polling_component_schema("1s"))
-    .extend(
-        spi.spi_device_schema(
-            cs_pin_required=True,
-            default_mode="mode1",
-            default_data_rate="1MHz",
-        )
-    )
+        cv.Required(CONF_TEMPERATURE): sensor.sensor_schema(
+            unit_of_measurement=UNIT_CELSIUS,
+            accuracy_decimals=1,
+            icon="mdi:thermometer",
+            device_class=DEVICE_CLASS_TEMPERATURE,
+            state_class=STATE_CLASS_MEASUREMENT,
+        ),
+    }
+).extend(cv.COMPONENT_SCHEMA).extend(
+    cv.polling_component_schema("100ms")
 )
 
 
 async def to_code(config):
     var = cg.new_Pvariable(config[CONF_ID])
-
     await cg.register_component(var, config)
-    await spi.register_spi_device(var, config)
 
-    int_pin = await cg.gpio_pin_expression(config[CONF_INT_PIN])
-    cg.add(var.set_int_pin(int_pin))
+    cg.add(var.set_cs_pin(config[CONF_CS_PIN]))
+    cg.add(var.set_int_pin(config[CONF_INT_PIN]))
+    cg.add(var.set_clk_pin(config[CONF_CLK_PIN]))
+    cg.add(var.set_miso_pin(config[CONF_MISO_PIN]))
+    cg.add(var.set_mosi_pin(config[CONF_MOSI_PIN]))
 
-    sensor_configs = (
-        (CONF_FLOW, "set_flow_sensor"),
-        (CONF_FILTERED_FLOW, "set_filtered_flow_sensor"),
-        (CONF_TOTAL_VOLUME, "set_total_volume_sensor"),
-        (CONF_TEMPERATURE, "set_temperature_sensor"),
-        (CONF_ERROR_FLAGS, "set_error_flags_sensor"),
-    )
+    flow = await sensor.new_sensor(config[CONF_FLOW])
+    cg.add(var.set_flow_sensor(flow))
 
-    for key, setter in sensor_configs:
-        if key in config:
-            sens = await sensor.new_sensor(config[key])
-            cg.add(getattr(var, setter)(sens))
+    volume = await sensor.new_sensor(config[CONF_TOTAL_VOLUME])
+    cg.add(var.set_total_volume_sensor(volume))
+
+    temperature = await sensor.new_sensor(config[CONF_TEMPERATURE])
+    cg.add(var.set_temperature_sensor(temperature))

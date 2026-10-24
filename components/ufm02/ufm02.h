@@ -1,31 +1,26 @@
+
 #pragma once
 
 #include "esphome/core/component.h"
-#include "esphome/core/gpio.h"
 #include "esphome/components/sensor/sensor.h"
-#include "esphome/components/spi/spi.h"
+
+#include <Arduino.h>
+#include <SPI.h>
+#include <ScioSense_UFM02.h>
 
 namespace esphome {
 namespace ufm02 {
 
-class UFM02Component
-    : public PollingComponent,
-      public spi::SPIDevice<
-          spi::BIT_ORDER_MSB_FIRST,
-          spi::CLOCK_POLARITY_LOW,
-          spi::CLOCK_PHASE_TRAILING,
-          spi::DATA_RATE_1MHZ> {
+class UFM02Component : public PollingComponent {
  public:
-  UFM02Component() : PollingComponent(1000) {}
-
-  void set_int_pin(InternalGPIOPin *pin) { int_pin_ = pin; }
+  void set_cs_pin(int pin) { cs_pin_ = pin; }
+  void set_int_pin(int pin) { int_pin_ = pin; }
+  void set_clk_pin(int pin) { clk_pin_ = pin; }
+  void set_miso_pin(int pin) { miso_pin_ = pin; }
+  void set_mosi_pin(int pin) { mosi_pin_ = pin; }
 
   void set_flow_sensor(sensor::Sensor *sensor) {
     flow_sensor_ = sensor;
-  }
-
-  void set_filtered_flow_sensor(sensor::Sensor *sensor) {
-    filtered_flow_sensor_ = sensor;
   }
 
   void set_total_volume_sensor(sensor::Sensor *sensor) {
@@ -36,26 +31,24 @@ class UFM02Component
     temperature_sensor_ = sensor;
   }
 
-  void set_error_flags_sensor(sensor::Sensor *sensor) {
-    error_flags_sensor_ = sensor;
-  }
-
   void setup() override;
   void update() override;
   void dump_config() override;
 
  protected:
-  InternalGPIOPin *int_pin_{nullptr};
+  int cs_pin_{5};
+  int int_pin_{2};
+  int clk_pin_{18};
+  int miso_pin_{19};
+  int mosi_pin_{23};
+
+  bool initialized_{false};
 
   sensor::Sensor *flow_sensor_{nullptr};
-  sensor::Sensor *filtered_flow_sensor_{nullptr};
   sensor::Sensor *total_volume_sensor_{nullptr};
   sensor::Sensor *temperature_sensor_{nullptr};
-  sensor::Sensor *error_flags_sensor_{nullptr};
 
-  bool read_register_(uint8_t address, uint32_t *value);
-  bool write_register_(uint8_t address, uint32_t value);
-  bool write_opcode_(uint8_t opcode);
+  UFM02 ufm02_;
 };
 
 }  // namespace ufm02
