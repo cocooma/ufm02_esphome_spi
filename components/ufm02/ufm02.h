@@ -55,6 +55,9 @@ class UFM02Component
   sensor::Sensor *total_volume_sensor_{nullptr};
   sensor::Sensor *temperature_sensor_{nullptr};
   sensor::Sensor *error_flags_sensor_{nullptr};
+  bool read_register_(uint8_t address, uint32_t *value);
+  bool write_register_(uint8_t address, uint32_t value);
+  bool write_opcode_(uint8_t opcode);
 };
 
 }  // namespace ufm02
