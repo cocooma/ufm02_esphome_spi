@@ -77,6 +77,18 @@ bool UFM02Component::read_register_(uint8_t address, uint32_t *value) {
   this->write_byte(CMD_RD_RAM);
   this->write_byte(address);
   this->read_array(data, sizeof(data));
+
+  this->enable();
+this->write_byte(CMD_RD_RAM);
+this->write_byte(address);
+this->read_array(data, sizeof(data));
+
+ESP_LOGD(TAG,
+         "SPI read reg=0x%02X -> %02X %02X %02X %02X",
+         address, data[0], data[1], data[2], data[3]);
+
+this->disable();
+
   this->disable();
 
   // Assemble the four bytes in big-endian order.
