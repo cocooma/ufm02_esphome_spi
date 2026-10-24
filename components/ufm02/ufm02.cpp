@@ -73,12 +73,7 @@ bool UFM02Component::read_register_(uint8_t address, uint32_t *value) {
 
   uint8_t data[4] = {0, 0, 0, 0};
 
-  this->enable();
-  this->write_byte(CMD_RD_RAM);
-  this->write_byte(address);
-  this->read_array(data, sizeof(data));
-
-  this->enable();
+this->enable();
 this->write_byte(CMD_RD_RAM);
 this->write_byte(address);
 this->read_array(data, sizeof(data));
